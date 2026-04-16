@@ -1,0 +1,9 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/access_gate.html"
+    }
+  ]
+}
