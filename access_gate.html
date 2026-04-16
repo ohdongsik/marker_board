@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>웹보드 접근 인증</title>
+    <style>
+      :root {
+        --bg: #f3f6f8;
+        --surface: rgba(255, 255, 255, 0.92);
+        --ink: #172126;
+        --muted: #64727c;
+        --line: #d8e1e7;
+        --primary: #2f6df6;
+        --primary-soft: #edf3ff;
+        --warn: #fff1f1;
+        --warn-ink: #b14f4f;
+        --shadow-lg: 0 28px 70px rgba(18, 35, 45, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        color: var(--ink);
+        font-family: "Pretendard Variable", "Pretendard", "SUIT", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(47, 109, 246, 0.12), transparent 24%),
+          radial-gradient(circle at top right, rgba(122, 88, 209, 0.10), transparent 20%),
+          linear-gradient(180deg, #f8fbfc 0%, var(--bg) 100%);
+      }
+
+      .gate {
+        width: min(460px, calc(100% - 32px));
+        padding: 34px;
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        background: var(--surface);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid #d7e0ea;
+        background: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        color: #466178;
+      }
+
+      h1 {
+        margin: 18px 0 0;
+        font-size: 34px;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+      }
+
+      p {
+        margin: 14px 0 0;
+        font-size: 16px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .field {
+        margin-top: 24px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      input {
+        width: 100%;
+        padding: 14px 15px;
+        border: 1px solid #d8e1e7;
+        border-radius: 16px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+      }
+
+      .actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 16px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .primary {
+        background: var(--primary);
+        color: #fff;
+      }
+
+      .soft {
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+
+      .error {
+        display: none;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border: 1px solid #f0d1d1;
+        border-radius: 14px;
+        background: var(--warn);
+        color: var(--warn-ink);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .error.show {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="gate">
+      <div class="eyebrow">ACCESS CONTROL</div>
+      <h1>웹보드 접근 인증</h1>
+      <p>비밀번호를 입력하면 이미지 마커 메모 보드에 접근할 수 있습니다.</p>
+
+      <form id="gateForm">
+        <div class="field">
+          <label for="passwordInput">비밀번호</label>
+          <input id="passwordInput" type="password" inputmode="numeric" autocomplete="current-password" placeholder="비밀번호를 입력해 주세요" />
+        </div>
+        <div class="actions">
+          <button class="primary" type="submit">입장하기</button>
+          <button class="soft" type="button" id="clearBtn">지우기</button>
+        </div>
+        <div class="error" id="errorBox">비밀번호가 올바르지 않습니다.</div>
+      </form>
+    </main>
+
+    <script>
+      const PASSWORD = "1234";
+      const SESSION_KEY = "image-board-authenticated";
+
+      const form = document.getElementById("gateForm");
+      const passwordInput = document.getElementById("passwordInput");
+      const errorBox = document.getElementById("errorBox");
+      const clearBtn = document.getElementById("clearBtn");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (passwordInput.value === PASSWORD) {
+          sessionStorage.setItem(SESSION_KEY, "true");
+          window.location.href = "./image_marker_memo_board.html";
+          return;
+        }
+        errorBox.classList.add("show");
+        passwordInput.select();
+      });
+
+      clearBtn.addEventListener("click", () => {
+        passwordInput.value = "";
+        errorBox.classList.remove("show");
+        passwordInput.focus();
+      });
+
+      passwordInput.focus();
+    </script>
+  </body>
+</html>
