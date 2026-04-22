@@ -156,6 +156,7 @@
 
     <script>
       const SESSION_KEY = "image-board-session-token";
+      const API_BASE_URL = "https://ehvqvatfpaceaxfdnkbe.supabase.co/functions/v1/marker-board-api";
 
       const form = document.getElementById("gateForm");
       const passwordInput = document.getElementById("passwordInput");
@@ -168,7 +169,7 @@
         errorBox.classList.remove("show");
 
         try {
-          const response = await fetch("/api/auth", {
+          const response = await fetch(`${API_BASE_URL}/auth`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

@@ -14,7 +14,12 @@ Do not put the service-role key in browser code. It must only be configured as a
 
 ## Vercel environment variables
 
-Add these variables to the Vercel project for Production and Preview:
+The current production frontend uses Supabase Edge Function
+`marker-board-api` as its backend, so Vercel can serve the page without
+server-side environment variables.
+
+If you switch back to Vercel Functions, add these variables to the Vercel
+project for Production and Preview:
 
 ```text
 BOARD_PASSWORD=your-private-password
@@ -50,7 +55,7 @@ vercel dev
 
 ## Security model
 
-- The password is checked only by `/api/auth`.
+- The password is checked only by the Supabase Edge Function backend.
 - The browser stores only a signed temporary session token.
-- Board data is read/written only by `/api/state`.
-- Supabase service-role credentials stay server-side in Vercel environment variables.
+- Board data is read/written only by authenticated backend requests.
+- Supabase service-role credentials stay server-side in Supabase Edge Functions.
