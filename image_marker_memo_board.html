@@ -779,6 +779,30 @@
         color: var(--muted);
       }
 
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 26px;
+        z-index: 80;
+        padding: 13px 18px;
+        border: 1px solid rgba(23, 33, 38, 0.08);
+        border-radius: 999px;
+        background: rgba(23, 33, 38, 0.92);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 800;
+        box-shadow: 0 18px 44px rgba(18, 35, 45, 0.18);
+        transform: translate(-50%, 14px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
       @media (max-width: 1180px) {
         .workspace {
           grid-template-columns: 1fr;
@@ -820,6 +844,7 @@
                 <button class="btn gray" id="pdfExportBtn" type="button">PDF 다운</button>
                 <button class="btn warn" id="deleteBoardBtn" type="button">보드 삭제</button>
                 <button class="btn gray" id="exportBtn" type="button">JSON 내보내기</button>
+                <button class="btn soft" id="copyBoardUrlBtn" type="button">URL 복사</button>
               </div>
             </div>
 
@@ -902,6 +927,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script>
       const API_BASE_URL = "https://ehvqvatfpaceaxfdnkbe.supabase.co/functions/v1/marker-board-api";
       const STATE_API_URL = `${API_BASE_URL}/state`;
@@ -947,6 +973,8 @@
         pdfExportBtn: document.getElementById("pdfExportBtn"),
         deleteBoardBtn: document.getElementById("deleteBoardBtn"),
         exportBtn: document.getElementById("exportBtn"),
+        copyBoardUrlBtn: document.getElementById("copyBoardUrlBtn"),
+        toast: document.getElementById("toast"),
         resetBtn: document.getElementById("resetBtn"),
         focusPasteBtn: document.getElementById("focusPasteBtn"),
         boardNavList: document.getElementById("boardNavList"),
@@ -1001,6 +1029,38 @@
 
       function setSaveState(text) {
         els.pasteStatus.textContent = text;
+      }
+
+      function getBoardIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("board");
+      }
+
+      function buildBoardUrl(boardId = state.currentBoardId) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("board", boardId);
+        url.hash = "";
+        return url.toString();
+      }
+
+      function syncBoardUrl(boardId = state.currentBoardId, replace = false) {
+        if (!boardId) return;
+        const nextUrl = buildBoardUrl(boardId);
+        if (nextUrl === window.location.href) return;
+        const method = replace ? "replaceState" : "pushState";
+        window.history[method]({ boardId }, "", nextUrl);
+      }
+
+      let toastTimer = null;
+      function showToast(message) {
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+        }
+        els.toast.textContent = message;
+        els.toast.classList.add("show");
+        toastTimer = setTimeout(() => {
+          els.toast.classList.remove("show");
+        }, 1800);
       }
 
       function touchBoard(board) {
@@ -1131,9 +1191,13 @@
 
         ensureBoards();
 
-        if (!state.boards.some((board) => board.id === state.currentBoardId)) {
+        const requestedBoardId = getBoardIdFromUrl();
+        if (requestedBoardId && state.boards.some((board) => board.id === requestedBoardId)) {
+          state.currentBoardId = requestedBoardId;
+        } else if (!state.boards.some((board) => board.id === state.currentBoardId)) {
           state.currentBoardId = state.boards[0].id;
         }
+        syncBoardUrl(state.currentBoardId, true);
       }
 
       function render() {
@@ -1158,6 +1222,7 @@
           ? `${board.imageName || "붙여넣은 이미지"} · ${board.imageWidth}×${board.imageHeight}`
           : "이미지 없음";
         els.deleteBoardBtn.disabled = state.boards.length <= 1;
+        els.copyBoardUrlBtn.disabled = !board;
 
         renderSidebarTitle();
         renderBoardNav();
@@ -1384,6 +1449,7 @@
         state.dragMarkerId = null;
         state.dragged = false;
         state.popupMode = "view";
+        syncBoardUrl(boardId);
         queueSave();
         render();
       }
@@ -1394,6 +1460,7 @@
         state.currentBoardId = board.id;
         state.navCollapsed = false;
         state.editingBoardId = null;
+        syncBoardUrl(board.id);
         queueSave();
         render();
       }
@@ -1661,6 +1728,29 @@
         anchor.download = `${(board.name || "image-board").replace(/\s+/g, "-")}-markers.json`;
         anchor.click();
         URL.revokeObjectURL(url);
+      }
+
+      async function copyCurrentBoardUrl() {
+        const board = currentBoard();
+        if (!board) return;
+
+        const url = buildBoardUrl(board.id);
+        try {
+          await navigator.clipboard.writeText(url);
+        } catch (error) {
+          console.warn("Clipboard API failed, falling back to manual copy", error);
+          const input = document.createElement("input");
+          input.value = url;
+          input.setAttribute("readonly", "");
+          input.style.position = "fixed";
+          input.style.left = "-9999px";
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand("copy");
+          input.remove();
+        }
+
+        showToast("복사되었습니다.");
       }
 
       function waitForNextFrame() {
@@ -1948,6 +2038,7 @@
       els.confirmDeleteBoardBtn.addEventListener("click", deleteCurrentBoard);
       els.resetBtn.addEventListener("click", resetBoard);
       els.exportBtn.addEventListener("click", exportJson);
+      els.copyBoardUrlBtn.addEventListener("click", copyCurrentBoardUrl);
       els.focusPasteBtn.addEventListener("click", () => {
         els.dropzone.focus();
         els.pasteStatus.textContent = "지금 Ctrl/Cmd + V로 붙여넣어 주세요";
@@ -1956,6 +2047,14 @@
       els.navToggleBtn.addEventListener("click", toggleNav);
 
       window.addEventListener("paste", handlePaste);
+      window.addEventListener("popstate", () => {
+        const boardId = getBoardIdFromUrl();
+        if (boardId && state.boards.some((board) => board.id === boardId)) {
+          state.currentBoardId = boardId;
+          state.popupMode = "view";
+          render();
+        }
+      });
       window.addEventListener("resize", () => {
         const board = currentBoard();
         const marker = board?.markers.find((item) => item.id === board.selectedId);
