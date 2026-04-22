@@ -6,8 +6,8 @@
     <title>이미지 마커 메모 보드</title>
     <script>
       (function () {
-        const SESSION_KEY = "image-board-authenticated";
-        if (sessionStorage.getItem(SESSION_KEY) !== "true") {
+        const SESSION_KEY = "image-board-session-token";
+        if (!sessionStorage.getItem(SESSION_KEY)) {
           window.location.replace("./access_gate.html");
         }
       })();
@@ -15,19 +15,19 @@
     <style>
       :root {
         --bg: #f3f6f8;
-        --surface: rgba(255, 255, 255, 0.9);
+        --surface: rgba(255, 255, 255, 0.86);
         --surface-strong: #ffffff;
         --ink: #172126;
         --muted: #60707a;
         --line: #d8e1e7;
+        --line-strong: #b7c3cb;
         --primary: #2f6df6;
         --primary-soft: #ecf3ff;
         --accent: #7a58d1;
         --accent-soft: #f1ecff;
         --good: #138e78;
         --good-soft: #eaf8f5;
-        --danger: #b14f4f;
-        --danger-soft: #fff1f1;
+        --warn: #fff5df;
         --shadow-lg: 0 28px 70px rgba(18, 35, 45, 0.11);
         --shadow-md: 0 18px 42px rgba(18, 35, 45, 0.08);
       }
@@ -42,14 +42,8 @@
         font-family: "Pretendard Variable", "Pretendard", "SUIT", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
         background:
           radial-gradient(circle at top left, rgba(47, 109, 246, 0.11), transparent 24%),
-          radial-gradient(circle at top right, rgba(122, 88, 209, 0.1), transparent 24%),
+          radial-gradient(circle at top right, rgba(122, 88, 209, 0.10), transparent 24%),
           linear-gradient(180deg, #f8fbfc 0%, var(--bg) 100%);
-      }
-
-      button,
-      input,
-      textarea {
-        font: inherit;
       }
 
       .page {
@@ -61,7 +55,7 @@
         overflow: hidden;
         border: 1px solid rgba(216, 225, 231, 0.92);
         border-radius: 32px;
-        background: linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.96) 100%);
+        background: linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.95) 100%);
         box-shadow: var(--shadow-lg);
         backdrop-filter: blur(18px);
       }
@@ -78,16 +72,13 @@
         grid-template-columns: 72px minmax(0, 1fr);
       }
 
-      .sidenav,
-      .board,
-      .bottom-panels {
+      .sidenav {
+        overflow: hidden;
         border: 1px solid var(--line);
         border-radius: 28px;
         background: linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(249,252,253,0.96) 100%);
-      }
-
-      .sidenav {
-        overflow: hidden;
+        min-height: 100%;
+        transition: width 180ms ease;
       }
 
       .sidenav-head {
@@ -107,136 +98,42 @@
         min-width: 0;
       }
 
-      .sidenav-title-button,
-      .board-nav-title-button {
+      .sidenav-title-button {
+        display: block;
         width: 100%;
         padding: 0;
         border: 0;
         background: transparent;
-        color: inherit;
+        color: var(--ink);
+        font: inherit;
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.2;
         text-align: left;
         cursor: text;
       }
 
-      .sidenav-title-button {
-        font-size: 20px;
-        font-weight: 800;
-        line-height: 1.2;
-      }
-
-      .sidenav-title-input,
-      .board-nav-title-input,
-      input[type="text"],
-      textarea {
+      .sidenav-title-input {
         width: 100%;
+        padding: 8px 10px;
         border: 1px solid #d8e1e7;
-        border-radius: 16px;
+        border-radius: 12px;
         background: #fff;
         color: var(--ink);
-      }
-
-      .sidenav-title-input {
-        padding: 8px 10px;
+        font: inherit;
         font-size: 18px;
         font-weight: 800;
       }
 
       .board-create {
-        width: 100%;
         margin-top: 12px;
+        width: 100%;
       }
 
       .board-nav-list {
         display: grid;
         gap: 10px;
         padding: 16px;
-      }
-
-      .board-nav-item,
-      .marker-item {
-        padding: 14px 14px 13px;
-        border-radius: 18px;
-        border: 1px solid var(--line);
-        background: rgba(255,255,255,0.84);
-        cursor: pointer;
-      }
-
-      .board-nav-item.active,
-      .marker-item.active {
-        border-color: #d4c7fb;
-        background: #f7f2ff;
-      }
-
-      .board-nav-top,
-      .marker-item-top,
-      .list-header,
-      .toolbar,
-      .toolbar-left,
-      .toolbar-right,
-      .popup-actions,
-      .readonly-actions,
-      .confirm-actions,
-      .marker-meta-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .board-nav-top,
-      .list-header,
-      .toolbar,
-      .marker-item-top,
-      .popup-actions,
-      .readonly-actions,
-      .confirm-actions,
-      .marker-meta-row {
-        justify-content: space-between;
-      }
-
-      .board-nav-title {
-        font-size: 14px;
-        font-weight: 800;
-      }
-
-      .board-nav-title-input {
-        padding: 8px 10px;
-        font-size: 14px;
-        font-weight: 800;
-      }
-
-      .board-nav-meta,
-      .marker-preview,
-      .muted,
-      .empty-state p,
-      .readonly-body {
-        color: var(--muted);
-      }
-
-      .board-nav-meta,
-      .marker-preview {
-        margin-top: 8px;
-        font-size: 12px;
-        line-height: 1.55;
-      }
-
-      .nav-toggle,
-      .btn,
-      .file-label {
-        appearance: none;
-        border: 1px solid transparent;
-        border-radius: 16px;
-        padding: 11px 15px;
-        font-size: 14px;
-        font-weight: 800;
-        line-height: 1;
-        cursor: pointer;
-        transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
-      }
-
-      .nav-toggle:hover,
-      .btn:hover,
-      .file-label:hover {
-        transform: translateY(-1px);
       }
 
       .nav-toggle {
@@ -246,8 +143,7 @@
         padding: 0;
         display: grid;
         place-items: center;
-        border-color: #dde4e8;
-        background: #f3f5f7;
+        border-radius: 14px;
       }
 
       .nav-toggle-icon {
@@ -269,25 +165,181 @@
         background: #5d6972;
       }
 
-      .nav-toggle-icon::before { top: 0; }
-      .nav-toggle-icon span { top: 5px; }
-      .nav-toggle-icon::after { top: 10px; }
+      .nav-toggle-icon::before {
+        top: 0;
+      }
+
+      .nav-toggle-icon span {
+        top: 5px;
+      }
+
+      .nav-toggle-icon::after {
+        top: 10px;
+      }
 
       .workspace.nav-collapsed .sidenav-head {
         padding: 16px 10px;
       }
 
       .workspace.nav-collapsed .sidenav-title,
-      .workspace.nav-collapsed .board-nav-list,
+      .workspace.nav-collapsed .board-nav-list {
+        display: none;
+      }
+
       .workspace.nav-collapsed .board-create {
         display: none;
       }
 
-      .btn.primary { background: var(--primary); color: #fff; }
+      .workspace.nav-collapsed .nav-toggle {
+        margin-top: 0;
+      }
+
+      .board-nav-title.editing {
+        padding: 0;
+      }
+
+      .board-nav-title-button {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+        text-align: left;
+        cursor: text;
+      }
+
+      .board-nav-title-input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #d8e1e7;
+        border-radius: 12px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .board-nav-item {
+        padding: 14px 14px 13px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.84);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .board-nav-item.active {
+        border-color: #d4c7fb;
+        background: #f7f2ff;
+      }
+
+      .board-nav-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .board-nav-title {
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .board-nav-meta {
+        margin-top: 8px;
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+
+
+      .workspace-main {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .board,
+      .bottom-panels,
+      .list-panel {
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(249,252,253,0.96) 100%);
+      }
+
+      .board {
+        overflow: hidden;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 18px 16px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255,255,255,0.76);
+      }
+
+      .toolbar-left,
+      .toolbar-right {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn,
+      .file-label {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 16px;
+        padding: 11px 15px;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+        transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+      }
+
+      .btn:hover,
+      .file-label:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn.primary {
+        background: var(--primary);
+        color: #fff;
+      }
+
       .btn.soft,
-      .file-label { background: var(--primary-soft); color: var(--primary); border-color: #d6e4ff; }
-      .btn.gray { background: #f3f5f7; color: #58656d; border-color: #dde4e8; }
-      .btn.warn { background: var(--danger-soft); color: var(--danger); border-color: #f0d1d1; }
+      .file-label {
+        background: var(--primary-soft);
+        color: var(--primary);
+        border-color: #d6e4ff;
+      }
+
+      .btn.gray {
+        background: #f3f5f7;
+        color: #58656d;
+        border-color: #dde4e8;
+      }
+
+      .btn.warn {
+        background: #fff1f1;
+        color: #b14f4f;
+        border-color: #f0d1d1;
+      }
+
+      .file-input {
+        display: none;
+      }
 
       .status-chip {
         display: inline-flex;
@@ -308,32 +360,6 @@
         border-color: #ccece4;
       }
 
-      .workspace-main {
-        display: grid;
-        gap: 18px;
-        min-width: 0;
-      }
-
-      .board {
-        overflow: hidden;
-      }
-
-      .toolbar {
-        flex-wrap: wrap;
-        padding: 18px 18px 16px;
-        border-bottom: 1px solid var(--line);
-        background: rgba(255,255,255,0.76);
-      }
-
-      .toolbar-left,
-      .toolbar-right {
-        flex-wrap: wrap;
-      }
-
-      .file-input {
-        display: none;
-      }
-
       .canvas-wrap {
         padding: 18px;
       }
@@ -344,7 +370,8 @@
         border: 1px dashed #c8d4dc;
         border-radius: 26px;
         overflow: auto;
-        background: linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(247,250,252,0.9) 100%);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(247,250,252,0.9) 100%);
       }
 
       .dropzone.empty {
@@ -372,6 +399,7 @@
         margin: 14px 0 0;
         font-size: 16px;
         line-height: 1.7;
+        color: var(--muted);
       }
 
       .empty-actions {
@@ -401,6 +429,143 @@
         inset: 0;
       }
 
+      .marker-popup {
+        position: absolute;
+        z-index: 12;
+        width: min(360px, calc(100% - 24px));
+        padding: 14px;
+        border: 1px solid #d9e1f2;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 18px 46px rgba(24, 42, 58, 0.16);
+        backdrop-filter: blur(14px);
+      }
+
+      .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(18, 26, 34, 0.36);
+        backdrop-filter: blur(6px);
+      }
+
+      .confirm-overlay[hidden] {
+        display: none !important;
+      }
+
+      .confirm-dialog {
+        width: min(420px, calc(100% - 24px));
+        padding: 24px;
+        border: 1px solid #d8e1e7;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 22px 54px rgba(18, 35, 45, 0.18);
+      }
+
+      .confirm-dialog h3 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.2;
+      }
+
+      .confirm-dialog p {
+        margin: 12px 0 0;
+        font-size: 15px;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+
+      .confirm-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .marker-popup-head {
+        display: none;
+      }
+
+      .marker-popup-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: #5f39c6;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .marker-popup-title {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--muted);
+      }
+
+      .marker-popup-fields {
+        display: grid;
+        gap: 10px;
+      }
+
+      .marker-popup-fields[hidden],
+      .marker-popup-readonly[hidden] {
+        display: none !important;
+      }
+
+      .marker-popup-readonly {
+        display: grid;
+        gap: 10px;
+      }
+
+      .readonly-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .readonly-block {
+        padding: 14px 16px;
+        border: 1px solid #e3e8ef;
+        border-radius: 16px;
+        background: #fbfcfe;
+      }
+
+      .readonly-value {
+        font-size: 14px;
+        line-height: 1.65;
+        color: var(--ink);
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .readonly-title-value {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
+      .marker-popup-text-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1.5;
+      }
+
+      .marker-popup-text-body {
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--muted);
+        white-space: pre-wrap;
+      }
+
       .marker {
         position: absolute;
         width: 34px;
@@ -418,6 +583,18 @@
         cursor: pointer;
       }
 
+      .marker::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 46px;
+        height: 46px;
+        border-radius: 999px;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(47, 109, 246, 0.20);
+      }
+
       .marker.active {
         background: linear-gradient(180deg, #7a58d1 0%, #5f39c6 100%);
         box-shadow: 0 16px 34px rgba(95, 57, 198, 0.34);
@@ -425,53 +602,57 @@
 
       .marker.dragging {
         cursor: grabbing;
+        box-shadow: 0 18px 38px rgba(95, 57, 198, 0.42);
       }
 
-      .marker-popup {
-        position: absolute;
-        z-index: 12;
-        width: min(360px, calc(100% - 24px));
-        padding: 14px;
-        border: 1px solid #d9e1f2;
-        border-radius: 22px;
-        background: rgba(255, 255, 255, 0.97);
-        box-shadow: 0 18px 46px rgba(24, 42, 58, 0.16);
-        backdrop-filter: blur(14px);
+      .bottom-panels {
+        overflow: hidden;
       }
 
-      .marker-popup-readonly,
-      .marker-popup-fields {
-        display: grid;
-        gap: 10px;
+      .list-panel {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
       }
 
-      .marker-popup-readonly[hidden],
-      .marker-popup-fields[hidden],
-      .confirm-overlay[hidden] {
-        display: none !important;
+      .panel {
+        padding: 20px 20px 18px;
+        border-bottom: 1px solid var(--line);
       }
 
-      .readonly-block {
-        padding: 14px 16px;
-        border: 1px solid #e3e8ef;
-        border-radius: 16px;
-        background: #fbfcfe;
+      .panel h2,
+      .panel h3 {
+        margin: 0;
       }
 
-      .readonly-title {
-        font-size: 16px;
-        font-weight: 800;
-        line-height: 1.5;
+      .panel h2 {
+        font-size: 26px;
+        line-height: 1.2;
       }
 
-      .readonly-body {
-        font-size: 14px;
+      .panel p {
+        margin: 12px 0 0;
+        font-size: 15px;
         line-height: 1.65;
-        white-space: pre-wrap;
-        word-break: break-word;
+        color: var(--muted);
       }
 
-      input[type="text"] {
+      .field-label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 800;
+        color: #4e5b63;
+      }
+
+      input[type="text"],
+      textarea {
+        width: 100%;
+        border: 1px solid #d8e1e7;
+        border-radius: 16px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
         padding: 13px 14px;
       }
 
@@ -479,20 +660,85 @@
         min-height: 180px;
         resize: vertical;
         line-height: 1.65;
-        padding: 13px 14px;
       }
 
-      .bottom-panels {
-        overflow: hidden;
+      .field-help {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      .popup-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
       }
 
       .list-wrap {
         padding: 18px;
+        overflow: auto;
+        min-height: 100%;
+      }
+
+      .marker-editor-panel {
+        margin-top: 18px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255,255,255,0.88);
+      }
+
+      .marker-editor-panel[hidden] {
+        display: none !important;
+      }
+
+      .marker-editor-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .marker-editor-title {
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
       }
 
       .marker-list {
         display: grid;
         gap: 10px;
+      }
+
+      .marker-item {
+        padding: 14px 14px 13px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.84);
+        cursor: pointer;
+      }
+
+      .marker-item.active {
+        border-color: #d4c7fb;
+        background: #f7f2ff;
+      }
+
+      .marker-item-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
       }
 
       .marker-no {
@@ -519,42 +765,17 @@
       }
 
       .marker-preview {
+        margin-top: 8px;
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--muted);
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
 
-      .confirm-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 40;
-        display: grid;
-        place-items: center;
-        padding: 20px;
-        background: rgba(18, 26, 34, 0.36);
-        backdrop-filter: blur(6px);
-      }
-
-      .confirm-dialog {
-        width: min(420px, calc(100% - 24px));
-        padding: 24px;
-        border: 1px solid #d8e1e7;
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.98);
-        box-shadow: 0 22px 54px rgba(18, 35, 45, 0.18);
-      }
-
-      .confirm-dialog h3 {
-        margin: 0;
-        font-size: 24px;
-        line-height: 1.2;
-      }
-
-      .confirm-dialog p {
-        margin: 12px 0 0;
-        font-size: 15px;
-        line-height: 1.65;
+      .muted {
         color: var(--muted);
       }
 
@@ -572,12 +793,12 @@
   <body>
     <div class="page">
       <div class="shell">
-        <main class="workspace" id="workspace">
+        <main class="workspace">
           <aside class="sidenav">
             <div class="sidenav-head">
               <div class="sidenav-topbar">
                 <div class="sidenav-title" id="sidebarTitleWrap"></div>
-                <button class="nav-toggle" id="navToggleBtn" type="button" aria-label="사이드바 토글">
+                <button class="btn gray nav-toggle" id="navToggleBtn" type="button" aria-label="사이드바 토글">
                   <span class="nav-toggle-icon"><span></span></span>
                 </button>
               </div>
@@ -587,66 +808,82 @@
           </aside>
 
           <section class="workspace-main">
-            <section class="board">
-              <div class="toolbar">
-                <div class="toolbar-left">
-                  <label class="file-label" for="fileInput">이미지 업로드</label>
-                  <input id="fileInput" class="file-input" type="file" accept="image/*" />
-                  <button class="btn gray" id="resetBtn" type="button">이미지 비우기</button>
-                </div>
-                <div class="toolbar-right">
-                  <span class="status-chip" id="pasteStatus">이미지를 붙여넣어 주세요</span>
-                  <button class="btn gray" id="pdfExportBtn" type="button">PDF 다운</button>
-                  <button class="btn warn" id="deleteBoardBtn" type="button">보드 삭제</button>
-                  <button class="btn gray" id="exportBtn" type="button">JSON 내보내기</button>
-                </div>
+          <section class="board">
+            <div class="toolbar">
+              <div class="toolbar-left">
+                <label class="file-label" for="fileInput">이미지 업로드</label>
+                <input id="fileInput" class="file-input" type="file" accept="image/*" />
+                <button class="btn gray" id="resetBtn" type="button">이미지 비우기</button>
               </div>
+              <div class="toolbar-right">
+                <span class="status-chip" id="pasteStatus">이미지를 붙여넣어 주세요</span>
+                <button class="btn gray" id="pdfExportBtn" type="button">PDF 다운</button>
+                <button class="btn warn" id="deleteBoardBtn" type="button">보드 삭제</button>
+                <button class="btn gray" id="exportBtn" type="button">JSON 내보내기</button>
+              </div>
+            </div>
 
-              <div class="canvas-wrap">
-                <div class="dropzone empty" id="dropzone" tabindex="0">
-                  <div class="empty-state" id="emptyState">
-                    <h2>여기에 이미지를 붙여넣거나 업로드해 주세요</h2>
-                    <p>이미지를 붙여넣은 뒤 원하는 위치를 클릭해 번호 마커를 찍고, 마커별 메모를 저장할 수 있습니다.</p>
-                    <div class="empty-actions">
-                      <label class="file-label" for="fileInput">이미지 업로드</label>
-                      <button class="btn primary" id="focusPasteBtn" type="button">붙여넣기 준비</button>
-                    </div>
-                  </div>
-
-                  <div class="image-stage" id="imageStage" hidden>
-                    <img id="boardImage" alt="annotation target" />
-                    <div class="marker-layer" id="markerLayer"></div>
-                    <div class="marker-popup" id="markerPopup" hidden>
-                      <div class="marker-popup-readonly" id="markerPopupReadonly" hidden>
-                        <div class="readonly-block"><div class="readonly-title" id="readonlyTitle"></div></div>
-                        <div class="readonly-block"><div class="readonly-body" id="readonlyBody"></div></div>
-                        <div class="readonly-actions">
-                          <button class="btn soft" id="editNoteBtn" type="button">편집</button>
-                        </div>
-                      </div>
-                      <div class="marker-popup-fields" id="markerPopupEditor" hidden>
-                        <div><input id="noteTitle" type="text" maxlength="40" placeholder="메모 제목" /></div>
-                        <div><textarea id="noteBody" placeholder="메모 내용을 입력해 주세요"></textarea></div>
-                        <div class="popup-actions">
-                          <button class="btn primary" id="saveNoteBtn" type="button">메모 저장</button>
-                          <button class="btn warn" id="deleteMarkerBtn" type="button">마커 삭제</button>
-                        </div>
-                      </div>
-                    </div>
+            <div class="canvas-wrap">
+              <div class="dropzone empty" id="dropzone" tabindex="0">
+                <div class="empty-state" id="emptyState">
+                  <h2>여기에 이미지를 붙여넣거나 업로드해 주세요</h2>
+                  <p>
+                    가장 이상적인 UX는 별도 저장 없이 바로 붙여넣기해서 검토하는 방식입니다.
+                    이미지가 들어오면 원하는 위치를 클릭해서 번호 마커를 추가하고,
+                    하단 메모 패널에서 섹션 메모를 작성할 수 있습니다.
+                  </p>
+                  <div class="empty-actions">
+                    <label class="file-label" for="fileInput">이미지 업로드</label>
+                    <button class="btn primary" id="focusPasteBtn" type="button">붙여넣기 준비</button>
                   </div>
                 </div>
-              </div>
-            </section>
 
-            <section class="bottom-panels">
-              <section class="list-wrap">
-                <div class="list-header">
-                  <h3>마커 목록</h3>
-                  <span class="muted" id="imageMeta">이미지 없음</span>
+                <div class="image-stage" id="imageStage" hidden>
+                  <img id="boardImage" alt="annotation target" />
+                  <div class="marker-layer" id="markerLayer"></div>
+                  <div class="marker-popup" id="markerPopup" hidden>
+                    <div class="marker-popup-head">
+                      <span class="marker-popup-badge" id="popupMarkerNo">#1</span>
+                      <div class="marker-popup-title" id="popupMarkerSummary">마커 메모 편집</div>
+                    </div>
+                    <div class="marker-popup-readonly" id="markerPopupReadonly" hidden>
+                      <div class="readonly-block">
+                        <div class="readonly-value readonly-title-value" id="readonlyTitle">-</div>
+                      </div>
+                      <div class="readonly-block">
+                        <div class="readonly-value" id="readonlyBody">-</div>
+                      </div>
+                      <div class="readonly-actions">
+                        <button class="btn soft" id="editNoteBtn" type="button">편집</button>
+                      </div>
+                    </div>
+                    <div class="marker-popup-fields" id="markerPopupEditor">
+                      <div>
+                        <input id="noteTitle" type="text" maxlength="40" placeholder="" disabled />
+                      </div>
+                      <div>
+                        <textarea id="noteBody" placeholder="" disabled></textarea>
+                      </div>
+                      <div class="popup-actions">
+                        <button class="btn primary" id="saveNoteBtn" type="button" disabled>메모 저장</button>
+                        <button class="btn warn" id="deleteMarkerBtn" type="button" disabled>마커 삭제</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="marker-list" id="markerList"></div>
-              </section>
+              </div>
+            </div>
+          </section>
+
+          <section class="bottom-panels">
+            <section class="list-panel list-wrap">
+              <div class="list-header">
+                <h3>마커 목록</h3>
+                <span class="muted" id="imageMeta">이미지 없음</span>
+              </div>
+              <div class="marker-list" id="markerList"></div>
             </section>
+          </section>
           </section>
         </main>
       </div>
@@ -666,7 +903,9 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script>
-      const STORAGE_KEY = "image-marker-memo-board:v3";
+      const STATE_API_URL = "/api/state";
+      const LOCAL_STORAGE_KEY = "image-marker-memo-board:fallback";
+      const SESSION_KEY = "image-board-session-token";
 
       const state = {
         boards: [],
@@ -678,29 +917,23 @@
         sidebarTitle: "웹보드",
         editingSidebarTitle: false,
         popupMode: "view",
+        isHydrated: false,
+        saveTimer: null,
       };
 
       const els = {
-        workspace: document.getElementById("workspace"),
-        sidebarTitleWrap: document.getElementById("sidebarTitleWrap"),
-        navToggleBtn: document.getElementById("navToggleBtn"),
-        boardNavList: document.getElementById("boardNavList"),
-        createBoardBtn: document.getElementById("createBoardBtn"),
         fileInput: document.getElementById("fileInput"),
-        resetBtn: document.getElementById("resetBtn"),
-        pasteStatus: document.getElementById("pasteStatus"),
-        pdfExportBtn: document.getElementById("pdfExportBtn"),
-        deleteBoardBtn: document.getElementById("deleteBoardBtn"),
-        exportBtn: document.getElementById("exportBtn"),
+        boardImage: document.getElementById("boardImage"),
+        imageStage: document.getElementById("imageStage"),
         dropzone: document.getElementById("dropzone"),
         emptyState: document.getElementById("emptyState"),
-        focusPasteBtn: document.getElementById("focusPasteBtn"),
-        imageStage: document.getElementById("imageStage"),
-        boardImage: document.getElementById("boardImage"),
         markerLayer: document.getElementById("markerLayer"),
         markerPopup: document.getElementById("markerPopup"),
         markerPopupReadonly: document.getElementById("markerPopupReadonly"),
         markerPopupEditor: document.getElementById("markerPopupEditor"),
+        markerList: document.getElementById("markerList"),
+        popupMarkerNo: document.getElementById("popupMarkerNo"),
+        popupMarkerSummary: document.getElementById("popupMarkerSummary"),
         readonlyTitle: document.getElementById("readonlyTitle"),
         readonlyBody: document.getElementById("readonlyBody"),
         editNoteBtn: document.getElementById("editNoteBtn"),
@@ -708,11 +941,21 @@
         noteBody: document.getElementById("noteBody"),
         saveNoteBtn: document.getElementById("saveNoteBtn"),
         deleteMarkerBtn: document.getElementById("deleteMarkerBtn"),
-        markerList: document.getElementById("markerList"),
+        pasteStatus: document.getElementById("pasteStatus"),
         imageMeta: document.getElementById("imageMeta"),
+        pdfExportBtn: document.getElementById("pdfExportBtn"),
+        deleteBoardBtn: document.getElementById("deleteBoardBtn"),
+        exportBtn: document.getElementById("exportBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        focusPasteBtn: document.getElementById("focusPasteBtn"),
+        boardNavList: document.getElementById("boardNavList"),
+        createBoardBtn: document.getElementById("createBoardBtn"),
         deleteBoardConfirm: document.getElementById("deleteBoardConfirm"),
         cancelDeleteBoardBtn: document.getElementById("cancelDeleteBoardBtn"),
         confirmDeleteBoardBtn: document.getElementById("confirmDeleteBoardBtn"),
+        navToggleBtn: document.getElementById("navToggleBtn"),
+        workspace: document.querySelector(".workspace"),
+        sidebarTitleWrap: document.getElementById("sidebarTitleWrap"),
       };
 
       function uid(prefix = "id") {
@@ -746,61 +989,180 @@
         }
       }
 
-      function touchBoard(board) {
-        if (board) board.updatedAt = new Date().toISOString();
-      }
-
-      function saveToLocal() {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            boards: state.boards,
-            currentBoardId: state.currentBoardId,
-            navCollapsed: state.navCollapsed,
-            sidebarTitle: state.sidebarTitle,
-          }),
-        );
-        setSaveState("저장됨");
-      }
-
-      function restoreFromLocal() {
-        try {
-          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-          if (saved) {
-            state.boards = Array.isArray(saved.boards) ? saved.boards : [];
-            state.currentBoardId = saved.currentBoardId || null;
-            state.navCollapsed = Boolean(saved.navCollapsed);
-            state.sidebarTitle = saved.sidebarTitle || "웹보드";
-          }
-        } catch (error) {
-          console.error(error);
-        }
-        ensureBoards();
-        if (!state.boards.some((board) => board.id === state.currentBoardId)) {
-          state.currentBoardId = state.boards[0].id;
-        }
-      }
-
-      function setSaveState(text, live = false) {
-        els.pasteStatus.textContent = text;
-        els.pasteStatus.classList.toggle("live", live);
-      }
-
       function getNextBoardName() {
         return `웹보드 ${state.boards.length + 1}`;
       }
 
       function getNextNumber(board) {
-        return board.markers.length ? Math.max(...board.markers.map((item) => item.number)) + 1 : 1;
+        if (!board || board.markers.length === 0) return 1;
+        return Math.max(...board.markers.map((m) => m.number)) + 1;
       }
 
-      function escapeHtml(value) {
-        return String(value)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
+      function setSaveState(text) {
+        els.pasteStatus.textContent = text;
+      }
+
+      function touchBoard(board) {
+        if (!board) return;
+        board.updatedAt = new Date().toISOString();
+      }
+
+      function buildPersistedState() {
+        return {
+          boards: state.boards,
+          currentBoardId: state.currentBoardId,
+          navCollapsed: state.navCollapsed,
+          sidebarTitle: state.sidebarTitle,
+        };
+      }
+
+      function applyPersistedState(saved) {
+        if (!saved) return;
+        state.boards = Array.isArray(saved.boards) ? saved.boards : [];
+        state.currentBoardId = saved.currentBoardId || null;
+        state.navCollapsed = Boolean(saved.navCollapsed);
+        state.sidebarTitle = saved.sidebarTitle || "웹보드";
+      }
+
+      function loadLocalFallbackState() {
+        try {
+          const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+          console.error("Failed to load local fallback state", error);
+          return null;
+        }
+      }
+
+      function saveLocalFallbackState(payload) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+      }
+
+      function getSessionToken() {
+        return sessionStorage.getItem(SESSION_KEY);
+      }
+
+      function redirectToGate() {
+        sessionStorage.removeItem(SESSION_KEY);
+        window.location.replace("./access_gate.html");
+      }
+
+      async function apiFetch(url, options = {}) {
+        const token = getSessionToken();
+        if (!token) {
+          redirectToGate();
+          throw new Error("Missing session token");
+        }
+
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 401) {
+          redirectToGate();
+          throw new Error("Session expired");
+        }
+
+        return response;
+      }
+
+      async function persistState() {
+        const payload = buildPersistedState();
+
+        const response = await apiFetch(STATE_API_URL, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to save state: ${response.status}`);
+        }
+
+        saveLocalFallbackState(payload);
+        setSaveState("Supabase 저장됨");
+      }
+
+      function queueSave() {
+        if (!state.isHydrated) return;
+
+        if (state.saveTimer) {
+          clearTimeout(state.saveTimer);
+        }
+
+        state.saveTimer = setTimeout(async () => {
+          state.saveTimer = null;
+          try {
+            await persistState();
+          } catch (error) {
+            console.error("Failed to persist board", error);
+            setSaveState("저장 실패");
+          }
+        }, 120);
+      }
+
+      async function restoreFromServer() {
+        try {
+          const response = await apiFetch(STATE_API_URL, {
+            headers: {
+              Accept: "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to load state: ${response.status}`);
+          }
+
+          const result = await response.json();
+          applyPersistedState(result.state || loadLocalFallbackState());
+          setSaveState(result.state ? "Supabase 불러옴" : "새 보드 준비됨");
+        } catch (error) {
+          console.error("Failed to restore saved board", error);
+          applyPersistedState(loadLocalFallbackState());
+          setSaveState("Supabase 연결 실패");
+        }
+
+        ensureBoards();
+
+        if (!state.boards.some((board) => board.id === state.currentBoardId)) {
+          state.currentBoardId = state.boards[0].id;
+        }
+      }
+
+      function render() {
+        ensureBoards();
+        const board = currentBoard();
+
+        const hasImage = Boolean(board?.imageSrc);
+        els.workspace.classList.toggle("nav-collapsed", state.navCollapsed);
+        els.navToggleBtn.setAttribute("aria-label", state.navCollapsed ? "사이드바 펼치기" : "사이드바 접기");
+        els.dropzone.classList.toggle("empty", !hasImage);
+        els.imageStage.hidden = !hasImage;
+        els.emptyState.hidden = hasImage;
+
+        if (hasImage && els.boardImage.src !== board.imageSrc) {
+          els.boardImage.src = board.imageSrc;
+        }
+        if (!hasImage) {
+          els.boardImage.removeAttribute("src");
+        }
+
+        els.imageMeta.textContent = hasImage
+          ? `${board.imageName || "붙여넣은 이미지"} · ${board.imageWidth}×${board.imageHeight}`
+          : "이미지 없음";
+        els.deleteBoardBtn.disabled = state.boards.length <= 1;
+
+        renderSidebarTitle();
+        renderBoardNav();
+        renderMarkers();
+        renderMarkerList();
+        renderEditor();
       }
 
       function renderSidebarTitle() {
@@ -827,7 +1189,8 @@
         }
 
         els.sidebarTitleWrap.innerHTML = `<button id="sidebarTitleButton" class="sidenav-title-button" type="button">${escapeHtml(state.sidebarTitle)}</button>`;
-        document.getElementById("sidebarTitleButton").addEventListener("click", (event) => {
+        const button = document.getElementById("sidebarTitleButton");
+        button.addEventListener("click", (event) => {
           event.stopPropagation();
           state.editingSidebarTitle = true;
           renderSidebarTitle();
@@ -836,39 +1199,48 @@
 
       function renderBoardNav() {
         els.boardNavList.innerHTML = "";
-        state.boards.forEach((board, index) => {
+        state.boards.forEach((board) => {
+          const index = state.boards.findIndex((item) => item.id === board.id);
           const item = document.createElement("div");
           item.className = `board-nav-item${board.id === state.currentBoardId ? " active" : ""}`;
           item.addEventListener("click", () => switchBoard(board.id));
+
+          const hasImage = Boolean(board.imageSrc);
+          const markerCount = board.markers.length;
           const isEditing = state.editingBoardId === board.id;
-          const name = escapeHtml(board.name || `웹보드 ${index + 1}`);
+          const titleHtml = isEditing
+            ? `<div class="board-nav-title editing"><input class="board-nav-title-input" data-board-input-id="${board.id}" value="${escapeHtml(board.name || `웹보드 ${index + 1}`)}" /></div>`
+            : `<div class="board-nav-title"><button class="board-nav-title-button" type="button" data-board-title-id="${board.id}">${escapeHtml(board.name || `웹보드 ${index + 1}`)}</button></div>`;
           item.innerHTML = `
             <div class="board-nav-top">
-              <div class="board-nav-title">
-                ${isEditing ? `<input class="board-nav-title-input" data-board-input-id="${board.id}" value="${name}" />` : `<button class="board-nav-title-button" type="button" data-board-title-id="${board.id}">${name}</button>`}
-              </div>
-              <span class="status-chip${board.imageSrc ? " live" : ""}">${board.imageSrc ? "이미지 있음" : "빈 보드"}</span>
+              ${titleHtml}
+              <span class="status-chip${hasImage ? " live" : ""}">${hasImage ? "이미지 있음" : "빈 보드"}</span>
             </div>
-            <div class="board-nav-meta">마커 ${board.markers.length}개 · ${escapeHtml(board.imageName || "아직 이미지 없음")}</div>
+            <div class="board-nav-meta">마커 ${markerCount}개 · ${hasImage ? escapeHtml(board.imageName || "붙여넣은 이미지") : "아직 이미지 없음"}</div>
           `;
+
           els.boardNavList.appendChild(item);
         });
 
         els.boardNavList.querySelectorAll("[data-board-title-id]").forEach((button) => {
           button.addEventListener("click", (event) => {
             event.stopPropagation();
-            state.editingBoardId = button.dataset.boardTitleId;
-            renderBoardNav();
+            beginBoardNameEdit(button.dataset.boardTitleId);
           });
         });
 
         els.boardNavList.querySelectorAll("[data-board-input-id]").forEach((input) => {
           input.addEventListener("click", (event) => event.stopPropagation());
-          input.addEventListener("blur", () => finishBoardNameEdit(input.dataset.boardInputId, input.value));
+          input.addEventListener("input", (event) => {
+            updateBoardName(event.target.dataset.boardInputId, event.target.value, false);
+          });
+          input.addEventListener("blur", (event) => {
+            finishBoardNameEdit(event.target.dataset.boardInputId, event.target.value);
+          });
           input.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
               event.preventDefault();
-              finishBoardNameEdit(input.dataset.boardInputId, input.value);
+              finishBoardNameEdit(event.target.dataset.boardInputId, event.target.value);
             }
             if (event.key === "Escape") {
               state.editingBoardId = null;
@@ -876,12 +1248,19 @@
             }
           });
         });
+
+        const activeInput = els.boardNavList.querySelector("[data-board-input-id]");
+        if (activeInput) {
+          activeInput.focus();
+          activeInput.select();
+        }
       }
 
       function renderMarkers() {
         const board = currentBoard();
         els.markerLayer.innerHTML = "";
         if (!board) return;
+
         board.markers.forEach((marker) => {
           const button = document.createElement("button");
           button.type = "button";
@@ -889,6 +1268,9 @@
           button.style.left = `${marker.x * 100}%`;
           button.style.top = `${marker.y * 100}%`;
           button.textContent = marker.number;
+          button.title = marker.title || `마커 ${marker.number}`;
+          button.dataset.markerId = marker.id;
+
           button.addEventListener("click", (event) => {
             event.stopPropagation();
             if (state.dragged) {
@@ -897,6 +1279,7 @@
             }
             selectMarker(marker.id);
           });
+
           button.addEventListener("pointerdown", (event) => beginMarkerDrag(event, marker.id));
           els.markerLayer.appendChild(button);
         });
@@ -914,19 +1297,27 @@
           return;
         }
 
-        board.markers.slice().sort((a, b) => a.number - b.number).forEach((marker) => {
-          const item = document.createElement("div");
-          item.className = `marker-item${marker.id === board.selectedId ? " active" : ""}`;
-          item.addEventListener("click", () => selectMarker(marker.id));
-          item.innerHTML = `
-            <div class="marker-item-top">
-              <span class="marker-no">${marker.number}</span>
-              <div class="marker-title">${escapeHtml(marker.title?.trim() || `메모 ${marker.number}`)}</div>
-            </div>
-            <div class="marker-preview">${escapeHtml(marker.body?.trim() || "아직 작성된 메모가 없습니다.")}</div>
-          `;
-          els.markerList.appendChild(item);
-        });
+        board.markers
+          .slice()
+          .sort((a, b) => a.number - b.number)
+          .forEach((marker) => {
+            const item = document.createElement("div");
+            item.className = `marker-item${marker.id === board.selectedId ? " active" : ""}`;
+            item.addEventListener("click", () => selectMarker(marker.id));
+
+            const title = marker.title?.trim() || `메모 ${marker.number}`;
+            const preview = marker.body?.trim() || "아직 작성된 메모가 없습니다.";
+
+            item.innerHTML = `
+              <div class="marker-item-top">
+                <span class="marker-no">${marker.number}</span>
+                <div class="marker-title">${escapeHtml(title)}</div>
+              </div>
+              <div class="marker-preview">${escapeHtml(preview)}</div>
+            `;
+
+            els.markerList.appendChild(item);
+          });
       }
 
       function renderEditor() {
@@ -944,8 +1335,8 @@
         els.deleteMarkerBtn.disabled = !enabled || !isEditMode;
 
         if (!enabled) {
-          els.readonlyTitle.textContent = "";
-          els.readonlyBody.textContent = "";
+          els.readonlyTitle.textContent = "-";
+          els.readonlyBody.textContent = "-";
           els.noteTitle.value = "";
           els.noteBody.value = "";
           return;
@@ -958,29 +1349,33 @@
         positionPopup(marker);
       }
 
-      function render() {
-        ensureBoards();
-        const board = currentBoard();
-        const hasImage = Boolean(board?.imageSrc);
-        els.workspace.classList.toggle("nav-collapsed", state.navCollapsed);
-        els.dropzone.classList.toggle("empty", !hasImage);
-        els.emptyState.hidden = hasImage;
-        els.imageStage.hidden = !hasImage;
-        els.deleteBoardBtn.disabled = state.boards.length <= 1;
+      function positionPopup(marker) {
+        if (!marker || els.markerPopup.hidden) return;
 
-        if (hasImage && els.boardImage.src !== board.imageSrc) {
-          els.boardImage.src = board.imageSrc;
+        const stageRect = els.imageStage.getBoundingClientRect();
+        const popupWidth = 360;
+        const popupHeight = 340;
+        const markerX = marker.x * stageRect.width;
+        const markerY = marker.y * stageRect.height;
+
+        let left = markerX + 28;
+        let top = markerY - 10;
+
+        if (left + popupWidth > stageRect.width - 12) {
+          left = markerX - popupWidth - 28;
         }
-        if (!hasImage) {
-          els.boardImage.removeAttribute("src");
+        if (left < 12) {
+          left = Math.max(12, stageRect.width - popupWidth - 12);
+        }
+        if (top + popupHeight > stageRect.height - 12) {
+          top = stageRect.height - popupHeight - 12;
+        }
+        if (top < 12) {
+          top = 12;
         }
 
-        els.imageMeta.textContent = hasImage ? `${board.imageName || "붙여넣은 이미지"} · ${board.imageWidth}×${board.imageHeight}` : "이미지 없음";
-        renderSidebarTitle();
-        renderBoardNav();
-        renderMarkers();
-        renderMarkerList();
-        renderEditor();
+        els.markerPopup.style.left = `${left}px`;
+        els.markerPopup.style.top = `${top}px`;
       }
 
       function switchBoard(boardId) {
@@ -988,25 +1383,8 @@
         state.dragMarkerId = null;
         state.dragged = false;
         state.popupMode = "view";
-        saveToLocal();
+        queueSave();
         render();
-      }
-
-      function finishSidebarTitleEdit(value) {
-        state.sidebarTitle = value.trim() || "웹보드";
-        state.editingSidebarTitle = false;
-        saveToLocal();
-        renderSidebarTitle();
-      }
-
-      function finishBoardNameEdit(boardId, value) {
-        const board = state.boards.find((item) => item.id === boardId);
-        if (!board) return;
-        board.name = value.trim() || "이름 없는 웹보드";
-        touchBoard(board);
-        state.editingBoardId = null;
-        saveToLocal();
-        renderBoardNav();
       }
 
       function createBoard() {
@@ -1014,8 +1392,32 @@
         state.boards.unshift(board);
         state.currentBoardId = board.id;
         state.navCollapsed = false;
-        saveToLocal();
+        state.editingBoardId = null;
+        queueSave();
         render();
+      }
+
+      function updateBoardName(boardId, value, shouldRender = true) {
+        const board = state.boards.find((item) => item.id === boardId);
+        if (!board) return;
+        const trimmed = value.trim();
+        board.name = trimmed || "이름 없는 웹보드";
+        touchBoard(board);
+        queueSave();
+        if (shouldRender) {
+          renderBoardNav();
+        }
+      }
+
+      function beginBoardNameEdit(boardId) {
+        state.editingBoardId = boardId;
+        renderBoardNav();
+      }
+
+      function finishBoardNameEdit(boardId, value) {
+        updateBoardName(boardId, value, false);
+        state.editingBoardId = null;
+        renderBoardNav();
       }
 
       function selectMarker(id) {
@@ -1036,14 +1438,6 @@
           els.noteTitle.focus();
           els.noteTitle.select();
         });
-      }
-
-      function closePopup() {
-        const board = currentBoard();
-        if (!board) return;
-        board.selectedId = null;
-        state.popupMode = "view";
-        render();
       }
 
       function addMarkerByClick(event) {
@@ -1080,15 +1474,30 @@
         board.selectedId = marker.id;
         state.popupMode = "edit";
         touchBoard(board);
-        saveToLocal();
+        queueSave();
         render();
         requestAnimationFrame(() => {
           els.noteTitle.focus();
+          els.noteTitle.select();
         });
       }
 
       function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
+      }
+
+      function updateMarkerPosition(clientX, clientY) {
+        const board = currentBoard();
+        if (!board || !state.dragMarkerId) return;
+
+        const rect = els.boardImage.getBoundingClientRect();
+        const marker = board.markers.find((item) => item.id === state.dragMarkerId);
+        if (!marker || rect.width === 0 || rect.height === 0) return;
+
+        marker.x = clamp((clientX - rect.left) / rect.width, 0, 1);
+        marker.y = clamp((clientY - rect.top) / rect.height, 0, 1);
+        render();
+        setSaveState("이동 중");
       }
 
       function beginMarkerDrag(event, markerId) {
@@ -1100,20 +1509,9 @@
         board.selectedId = markerId;
         state.popupMode = "view";
         state.dragged = false;
-        event.currentTarget.setPointerCapture?.(event.pointerId);
+        const target = event.currentTarget;
+        if (target.setPointerCapture) target.setPointerCapture(event.pointerId);
         render();
-      }
-
-      function updateMarkerPosition(clientX, clientY) {
-        const board = currentBoard();
-        if (!board || !state.dragMarkerId) return;
-        const rect = els.boardImage.getBoundingClientRect();
-        const marker = board.markers.find((item) => item.id === state.dragMarkerId);
-        if (!marker || rect.width === 0 || rect.height === 0) return;
-        marker.x = clamp((clientX - rect.left) / rect.width, 0, 1);
-        marker.y = clamp((clientY - rect.top) / rect.height, 0, 1);
-        render();
-        setSaveState("이동 중", true);
       }
 
       function handlePointerMove(event) {
@@ -1127,7 +1525,7 @@
         if (!board || !state.dragMarkerId) return;
         state.dragMarkerId = null;
         touchBoard(board);
-        saveToLocal();
+        queueSave();
         render();
         setTimeout(() => {
           state.dragged = false;
@@ -1138,40 +1536,22 @@
         const board = currentBoard();
         const marker = board?.markers.find((item) => item.id === board.selectedId);
         if (!marker) return;
+
         marker.title = els.noteTitle.value;
         marker.body = els.noteBody.value;
         marker.updatedAt = new Date().toISOString();
         touchBoard(board);
-        saveToLocal();
+        queueSave();
         state.popupMode = "view";
         render();
       }
 
-      function deleteSelectedMarker() {
+      function closePopup() {
         const board = currentBoard();
-        if (!board || !board.selectedId) return;
-        board.markers = board.markers.filter((item) => item.id !== board.selectedId);
+        if (!board) return;
         board.selectedId = null;
-        touchBoard(board);
-        saveToLocal();
+        state.popupMode = "view";
         render();
-      }
-
-      function positionPopup(marker) {
-        if (!marker || els.markerPopup.hidden) return;
-        const stageRect = els.imageStage.getBoundingClientRect();
-        const popupWidth = 360;
-        const popupHeight = 340;
-        const markerX = marker.x * stageRect.width;
-        const markerY = marker.y * stageRect.height;
-        let left = markerX + 28;
-        let top = markerY - 10;
-        if (left + popupWidth > stageRect.width - 12) left = markerX - popupWidth - 28;
-        if (left < 12) left = Math.max(12, stageRect.width - popupWidth - 12);
-        if (top + popupHeight > stageRect.height - 12) top = stageRect.height - popupHeight - 12;
-        if (top < 12) top = 12;
-        els.markerPopup.style.left = `${left}px`;
-        els.markerPopup.style.top = `${top}px`;
       }
 
       function handleOutsidePopupClick(event) {
@@ -1187,6 +1567,16 @@
         closePopup();
       }
 
+      function deleteSelectedMarker() {
+        const board = currentBoard();
+        if (!board || !board.selectedId) return;
+        board.markers = board.markers.filter((item) => item.id !== board.selectedId);
+        board.selectedId = null;
+        touchBoard(board);
+        queueSave();
+        render();
+      }
+
       function resetBoard() {
         const board = currentBoard();
         if (!board) return;
@@ -1199,9 +1589,10 @@
         state.dragMarkerId = null;
         state.dragged = false;
         touchBoard(board);
-        saveToLocal();
-        setSaveState("이미지를 붙여넣어 주세요");
+        queueSave();
         render();
+        els.pasteStatus.textContent = "이미지를 붙여넣어 주세요";
+        els.pasteStatus.classList.remove("live");
       }
 
       function applyImage(src, name = "clipboard-image") {
@@ -1216,8 +1607,9 @@
           board.markers = [];
           board.selectedId = null;
           touchBoard(board);
-          saveToLocal();
-          setSaveState("이미지가 준비되었습니다", true);
+          els.pasteStatus.textContent = "이미지가 준비되었습니다";
+          els.pasteStatus.classList.add("live");
+          queueSave();
           render();
         };
         img.src = src;
@@ -1270,18 +1662,24 @@
         URL.revokeObjectURL(url);
       }
 
+      function waitForNextFrame() {
+        return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      }
+
       async function exportAllBoardsToPdf() {
         if (!window.html2canvas || !window.jspdf?.jsPDF) {
           alert("PDF 생성에 필요한 라이브러리를 불러오지 못했습니다.");
           return;
         }
-        if (state.boards.length === 0) {
+
+        const boards = state.boards.slice();
+        if (boards.length === 0) {
           alert("내보낼 웹보드가 없습니다.");
           return;
         }
 
+        setSaveState("PDF 생성 중");
         els.pdfExportBtn.disabled = true;
-        setSaveState("PDF 생성 중", true);
 
         const container = document.createElement("div");
         container.style.position = "fixed";
@@ -1290,6 +1688,7 @@
         container.style.width = "1200px";
         container.style.padding = "24px";
         container.style.background = "#f6f8fb";
+        container.style.zIndex = "-1";
         document.body.appendChild(container);
 
         try {
@@ -1298,106 +1697,168 @@
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
           const margin = 28;
-          let first = true;
+          let isFirstPage = true;
 
-          for (const board of state.boards) {
+          for (const [index, board] of boards.entries()) {
+            setSaveState(`PDF 생성 중 (${index + 1}/${boards.length})`);
+
             const page = document.createElement("section");
             page.style.width = "1120px";
             page.style.padding = "28px";
-            page.style.background = "#fff";
+            page.style.marginBottom = "24px";
             page.style.borderRadius = "24px";
+            page.style.background = "#ffffff";
             page.style.border = "1px solid #dbe3ea";
+            page.style.boxShadow = "0 10px 30px rgba(16, 24, 40, 0.06)";
+            let canvas = null;
 
-            const title = document.createElement("h1");
-            title.textContent = board.name || "이름 없는 웹보드";
-            title.style.margin = "0";
-            title.style.fontSize = "28px";
-            page.appendChild(title);
+            try {
+              const title = document.createElement("div");
+              title.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+              title.style.fontSize = "28px";
+              title.style.fontWeight = "800";
+              title.style.color = "#18212a";
+              title.textContent = board.name || "이름 없는 웹보드";
+              page.appendChild(title);
 
-            const meta = document.createElement("div");
-            meta.textContent = `마커 ${board.markers.length}개${board.imageName ? ` · ${board.imageName}` : ""}`;
-            meta.style.marginTop = "10px";
-            meta.style.fontSize = "14px";
-            meta.style.color = "#687684";
-            page.appendChild(meta);
+              const meta = document.createElement("div");
+              meta.style.marginTop = "10px";
+              meta.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+              meta.style.fontSize = "14px";
+              meta.style.lineHeight = "1.6";
+              meta.style.color = "#687684";
+              meta.textContent = `마커 ${board.markers.length}개${board.imageName ? ` · ${board.imageName}` : ""}`;
+              page.appendChild(meta);
 
-            if (board.imageSrc) {
-              const wrap = document.createElement("div");
-              wrap.style.position = "relative";
-              wrap.style.marginTop = "20px";
-              wrap.style.border = "1px solid #dbe3ea";
-              wrap.style.borderRadius = "18px";
-              wrap.style.overflow = "hidden";
-              wrap.style.background = "#f8fafc";
-              wrap.style.display = "inline-block";
+              if (board.imageSrc) {
+                const imageWrap = document.createElement("div");
+                imageWrap.style.position = "relative";
+                imageWrap.style.marginTop = "20px";
+                imageWrap.style.border = "1px solid #dbe3ea";
+                imageWrap.style.borderRadius = "18px";
+                imageWrap.style.overflow = "hidden";
+                imageWrap.style.background = "#f8fafc";
+                imageWrap.style.display = "inline-block";
+                imageWrap.style.maxWidth = "100%";
 
-              const img = document.createElement("img");
-              img.src = board.imageSrc;
-              img.style.display = "block";
-              img.style.maxWidth = "1000px";
-              img.style.width = "100%";
-              wrap.appendChild(img);
-              page.appendChild(wrap);
+                const img = document.createElement("img");
+                img.src = board.imageSrc;
+                img.style.display = "block";
+                img.style.maxWidth = "1000px";
+                img.style.width = "100%";
+                img.style.height = "auto";
+                imageWrap.appendChild(img);
 
-              await new Promise((resolve) => {
-                if (img.complete) resolve(); else img.onload = resolve;
+                await new Promise((resolve) => {
+                  if (img.complete) resolve();
+                  else img.onload = resolve;
+                });
+
+                const naturalWidth = board.imageWidth || img.naturalWidth || 1;
+                const naturalHeight = board.imageHeight || img.naturalHeight || 1;
+                const renderedWidth = img.clientWidth || 1000;
+                const renderedHeight = img.clientHeight || Math.round((naturalHeight / naturalWidth) * renderedWidth);
+
+                board.markers.forEach((marker) => {
+                  const dot = document.createElement("div");
+                  dot.textContent = String(marker.number);
+                  dot.style.position = "absolute";
+                  dot.style.left = `${marker.x * renderedWidth}px`;
+                  dot.style.top = `${marker.y * renderedHeight}px`;
+                  dot.style.width = "28px";
+                  dot.style.height = "28px";
+                  dot.style.transform = "translate(-50%, -50%)";
+                  dot.style.borderRadius = "999px";
+                  dot.style.background = "#2f6df6";
+                  dot.style.border = "2px solid #fff";
+                  dot.style.color = "#fff";
+                  dot.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+                  dot.style.fontSize = "12px";
+                  dot.style.fontWeight = "800";
+                  dot.style.display = "grid";
+                  dot.style.placeItems = "center";
+                  dot.style.boxShadow = "0 8px 18px rgba(47,109,246,0.28)";
+                  imageWrap.appendChild(dot);
+                });
+
+                page.appendChild(imageWrap);
+              }
+
+              const notesWrap = document.createElement("div");
+              notesWrap.style.marginTop = "20px";
+              notesWrap.style.display = "grid";
+              notesWrap.style.gap = "12px";
+
+              if (board.markers.length === 0) {
+                const empty = document.createElement("div");
+                empty.style.padding = "14px 16px";
+                empty.style.border = "1px solid #e1e6ec";
+                empty.style.borderRadius = "16px";
+                empty.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+                empty.style.fontSize = "14px";
+                empty.style.color = "#6b7680";
+                empty.textContent = "등록된 마커 메모가 없습니다.";
+                notesWrap.appendChild(empty);
+              } else {
+                board.markers
+                  .slice()
+                  .sort((a, b) => a.number - b.number)
+                  .forEach((marker) => {
+                    const note = document.createElement("div");
+                    note.style.padding = "16px 18px";
+                    note.style.border = "1px solid #e1e6ec";
+                    note.style.borderRadius = "16px";
+                    note.style.background = "#fbfcfe";
+
+                    const noteTitle = document.createElement("div");
+                    noteTitle.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+                    noteTitle.style.fontSize = "16px";
+                    noteTitle.style.fontWeight = "800";
+                    noteTitle.style.color = "#18212a";
+                    noteTitle.textContent = `${marker.number}. ${marker.title?.trim() || "제목 없음"}`;
+
+                    const noteBody = document.createElement("div");
+                    noteBody.style.marginTop = "8px";
+                    noteBody.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+                    noteBody.style.fontSize = "14px";
+                    noteBody.style.lineHeight = "1.65";
+                    noteBody.style.color = "#53616b";
+                    noteBody.textContent = marker.body?.trim() || "메모 내용 없음";
+
+                    note.appendChild(noteTitle);
+                    note.appendChild(noteBody);
+                    notesWrap.appendChild(note);
+                  });
+              }
+
+              page.appendChild(notesWrap);
+              container.appendChild(page);
+              await waitForNextFrame();
+
+              canvas = await window.html2canvas(page, {
+                scale: 2,
+                backgroundColor: "#ffffff",
+                useCORS: true,
               });
 
-              const width = img.clientWidth || 1000;
-              const height = img.clientHeight || 600;
-              board.markers.forEach((marker) => {
-                const dot = document.createElement("div");
-                dot.textContent = String(marker.number);
-                dot.style.position = "absolute";
-                dot.style.left = `${marker.x * width}px`;
-                dot.style.top = `${marker.y * height}px`;
-                dot.style.width = "28px";
-                dot.style.height = "28px";
-                dot.style.transform = "translate(-50%, -50%)";
-                dot.style.borderRadius = "999px";
-                dot.style.background = "#2f6df6";
-                dot.style.border = "2px solid #fff";
-                dot.style.color = "#fff";
-                dot.style.fontSize = "12px";
-                dot.style.fontWeight = "800";
-                dot.style.display = "grid";
-                dot.style.placeItems = "center";
-                wrap.appendChild(dot);
-              });
+              const imgData = canvas.toDataURL("image/png");
+              const ratio = Math.min((pageWidth - margin * 2) / canvas.width, (pageHeight - margin * 2) / canvas.height);
+              const renderWidth = canvas.width * ratio;
+              const renderHeight = canvas.height * ratio;
+
+              if (!isFirstPage) {
+                pdf.addPage();
+              }
+              pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
+              isFirstPage = false;
+            } finally {
+              if (canvas) {
+                canvas.width = 0;
+                canvas.height = 0;
+              }
+              page.remove();
+              await waitForNextFrame();
             }
-
-            const notes = document.createElement("div");
-            notes.style.display = "grid";
-            notes.style.gap = "12px";
-            notes.style.marginTop = "20px";
-            if (board.markers.length === 0) {
-              const empty = document.createElement("div");
-              empty.textContent = "등록된 마커 메모가 없습니다.";
-              empty.style.padding = "14px 16px";
-              empty.style.border = "1px solid #e1e6ec";
-              empty.style.borderRadius = "16px";
-              notes.appendChild(empty);
-            } else {
-              board.markers.slice().sort((a, b) => a.number - b.number).forEach((marker) => {
-                const item = document.createElement("div");
-                item.style.padding = "16px 18px";
-                item.style.border = "1px solid #e1e6ec";
-                item.style.borderRadius = "16px";
-                item.innerHTML = `<div style="font-size:16px;font-weight:800;">${marker.number}. ${escapeHtml(marker.title || "제목 없음")}</div><div style="margin-top:8px;font-size:14px;line-height:1.65;color:#53616b;white-space:pre-wrap;">${escapeHtml(marker.body || "메모 내용 없음")}</div>`;
-                notes.appendChild(item);
-              });
-            }
-            page.appendChild(notes);
-            container.appendChild(page);
-
-            const canvas = await window.html2canvas(page, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-            const imgData = canvas.toDataURL("image/png");
-            const ratio = Math.min((pageWidth - margin * 2) / canvas.width, (pageHeight - margin * 2) / canvas.height);
-            const renderWidth = canvas.width * ratio;
-            const renderHeight = canvas.height * ratio;
-            if (!first) pdf.addPage();
-            pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
-            first = false;
           }
 
           pdf.save("webboards-export.pdf");
@@ -1412,6 +1873,21 @@
         }
       }
 
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function toggleNav() {
+        state.navCollapsed = !state.navCollapsed;
+        queueSave();
+        render();
+      }
+
       function openDeleteBoardConfirm() {
         if (state.boards.length <= 1) return;
         els.deleteBoardConfirm.hidden = false;
@@ -1422,15 +1898,28 @@
       }
 
       function deleteCurrentBoard() {
-        if (state.boards.length <= 1) return;
-        state.boards = state.boards.filter((board) => board.id !== state.currentBoardId);
-        state.currentBoardId = state.boards[0]?.id || null;
+        if (state.boards.length <= 1) {
+          closeDeleteBoardConfirm();
+          return;
+        }
+
+        const currentId = state.currentBoardId;
+        const nextBoards = state.boards.filter((board) => board.id !== currentId);
+        state.boards = nextBoards;
+        state.currentBoardId = nextBoards[0]?.id || null;
+        state.editingBoardId = null;
         state.dragMarkerId = null;
         state.dragged = false;
-        state.popupMode = "view";
         closeDeleteBoardConfirm();
-        saveToLocal();
+        queueSave();
         render();
+      }
+
+      function finishSidebarTitleEdit(value) {
+        state.sidebarTitle = value.trim() || "웹보드";
+        state.editingSidebarTitle = false;
+        queueSave();
+        renderSidebarTitle();
       }
 
       els.fileInput.addEventListener("change", (event) => {
@@ -1438,19 +1927,13 @@
         handleFile(file);
         event.target.value = "";
       });
-      els.resetBtn.addEventListener("click", resetBoard);
-      els.focusPasteBtn.addEventListener("click", () => {
-        els.dropzone.focus();
-        setSaveState("지금 Ctrl/Cmd + V로 붙여넣어 주세요");
-      });
-      els.createBoardBtn.addEventListener("click", createBoard);
-      els.navToggleBtn.addEventListener("click", () => {
-        state.navCollapsed = !state.navCollapsed;
-        saveToLocal();
-        render();
-      });
+
       els.boardImage.addEventListener("click", addMarkerByClick);
       els.markerLayer.addEventListener("click", addMarkerByClick);
+      document.addEventListener("click", handleOutsidePopupClick);
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", endMarkerDrag);
+      window.addEventListener("pointercancel", endMarkerDrag);
       els.saveNoteBtn.addEventListener("click", updateSelectedMarker);
       els.deleteMarkerBtn.addEventListener("click", deleteSelectedMarker);
       els.editNoteBtn.addEventListener("click", () => {
@@ -1458,29 +1941,46 @@
         if (!board?.selectedId) return;
         editMarker(board.selectedId);
       });
-      els.exportBtn.addEventListener("click", exportJson);
       els.pdfExportBtn.addEventListener("click", exportAllBoardsToPdf);
       els.deleteBoardBtn.addEventListener("click", openDeleteBoardConfirm);
       els.cancelDeleteBoardBtn.addEventListener("click", closeDeleteBoardConfirm);
       els.confirmDeleteBoardBtn.addEventListener("click", deleteCurrentBoard);
+      els.resetBtn.addEventListener("click", resetBoard);
+      els.exportBtn.addEventListener("click", exportJson);
+      els.focusPasteBtn.addEventListener("click", () => {
+        els.dropzone.focus();
+        els.pasteStatus.textContent = "지금 Ctrl/Cmd + V로 붙여넣어 주세요";
+      });
+      els.createBoardBtn.addEventListener("click", createBoard);
+      els.navToggleBtn.addEventListener("click", toggleNav);
 
-      document.addEventListener("click", handleOutsidePopupClick);
       window.addEventListener("paste", handlePaste);
-      window.addEventListener("pointermove", handlePointerMove);
-      window.addEventListener("pointerup", endMarkerDrag);
-      window.addEventListener("pointercancel", endMarkerDrag);
       window.addEventListener("resize", () => {
         const board = currentBoard();
         const marker = board?.markers.find((item) => item.id === board.selectedId);
-        if (marker) positionPopup(marker);
+        if (marker) {
+          positionPopup(marker);
+        }
       });
-      [els.noteTitle, els.noteBody].forEach((field) => {
-        field.addEventListener("input", () => setSaveState("편집 중", true));
+      window.addEventListener("keydown", (event) => {
+        const board = currentBoard();
+        if (event.key === "Delete" && board?.selectedId) {
+          deleteSelectedMarker();
+        }
       });
 
-      restoreFromLocal();
-      saveToLocal();
-      render();
+      [els.noteTitle, els.noteBody].forEach((field) => {
+        field.addEventListener("input", () => setSaveState("편집 중"));
+      });
+
+      async function initApp() {
+        await restoreFromServer();
+        state.isHydrated = true;
+        render();
+        queueSave();
+      }
+
+      initApp();
     </script>
   </body>
 </html>

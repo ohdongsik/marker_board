@@ -155,21 +155,42 @@
     </main>
 
     <script>
-      const PASSWORD = "1234";
-      const SESSION_KEY = "image-board-authenticated";
+      const SESSION_KEY = "image-board-session-token";
 
       const form = document.getElementById("gateForm");
       const passwordInput = document.getElementById("passwordInput");
       const errorBox = document.getElementById("errorBox");
       const clearBtn = document.getElementById("clearBtn");
 
-      form.addEventListener("submit", (event) => {
+      form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (passwordInput.value === PASSWORD) {
-          sessionStorage.setItem(SESSION_KEY, "true");
-          window.location.href = "./image_marker_memo_board.html";
-          return;
+
+        errorBox.classList.remove("show");
+
+        try {
+          const response = await fetch("/api/auth", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              password: passwordInput.value,
+            }),
+          });
+          const result = await response.json();
+
+          if (response.ok && result.token) {
+            sessionStorage.setItem(SESSION_KEY, result.token);
+            window.location.href = "./image_marker_memo_board.html";
+            return;
+          }
+
+          errorBox.textContent = result.message || "비밀번호가 올바르지 않습니다.";
+        } catch (error) {
+          console.error(error);
+          errorBox.textContent = "인증 서버에 연결할 수 없습니다.";
         }
+
         errorBox.classList.add("show");
         passwordInput.select();
       });
