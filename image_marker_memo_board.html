@@ -1757,14 +1757,14 @@
         return new Promise((resolve) => requestAnimationFrame(() => resolve()));
       }
 
-      async function exportAllBoardsToPdf() {
+      async function exportCurrentBoardToPdf() {
         if (!window.html2canvas || !window.jspdf?.jsPDF) {
           alert("PDF 생성에 필요한 라이브러리를 불러오지 못했습니다.");
           return;
         }
 
-        const boards = state.boards.slice();
-        if (boards.length === 0) {
+        const board = currentBoard();
+        if (!board) {
           alert("내보낼 웹보드가 없습니다.");
           return;
         }
@@ -1788,49 +1788,44 @@
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
           const margin = 28;
-          let isFirstPage = true;
+          const page = document.createElement("section");
+          page.style.width = "1120px";
+          page.style.padding = "28px";
+          page.style.marginBottom = "24px";
+          page.style.borderRadius = "24px";
+          page.style.background = "#ffffff";
+          page.style.border = "1px solid #dbe3ea";
+          page.style.boxShadow = "0 10px 30px rgba(16, 24, 40, 0.06)";
+          let canvas = null;
 
-          for (const [index, board] of boards.entries()) {
-            setSaveState(`PDF 생성 중 (${index + 1}/${boards.length})`);
+          try {
+            const title = document.createElement("div");
+            title.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+            title.style.fontSize = "28px";
+            title.style.fontWeight = "800";
+            title.style.color = "#18212a";
+            title.textContent = board.name || "이름 없는 웹보드";
+            page.appendChild(title);
 
-            const page = document.createElement("section");
-            page.style.width = "1120px";
-            page.style.padding = "28px";
-            page.style.marginBottom = "24px";
-            page.style.borderRadius = "24px";
-            page.style.background = "#ffffff";
-            page.style.border = "1px solid #dbe3ea";
-            page.style.boxShadow = "0 10px 30px rgba(16, 24, 40, 0.06)";
-            let canvas = null;
+            const meta = document.createElement("div");
+            meta.style.marginTop = "10px";
+            meta.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
+            meta.style.fontSize = "14px";
+            meta.style.lineHeight = "1.6";
+            meta.style.color = "#687684";
+            meta.textContent = `마커 ${board.markers.length}개${board.imageName ? ` · ${board.imageName}` : ""}`;
+            page.appendChild(meta);
 
-            try {
-              const title = document.createElement("div");
-              title.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
-              title.style.fontSize = "28px";
-              title.style.fontWeight = "800";
-              title.style.color = "#18212a";
-              title.textContent = board.name || "이름 없는 웹보드";
-              page.appendChild(title);
-
-              const meta = document.createElement("div");
-              meta.style.marginTop = "10px";
-              meta.style.fontFamily = '"Pretendard, Apple SD Gothic Neo, sans-serif"';
-              meta.style.fontSize = "14px";
-              meta.style.lineHeight = "1.6";
-              meta.style.color = "#687684";
-              meta.textContent = `마커 ${board.markers.length}개${board.imageName ? ` · ${board.imageName}` : ""}`;
-              page.appendChild(meta);
-
-              if (board.imageSrc) {
-                const imageWrap = document.createElement("div");
-                imageWrap.style.position = "relative";
-                imageWrap.style.marginTop = "20px";
-                imageWrap.style.border = "1px solid #dbe3ea";
-                imageWrap.style.borderRadius = "18px";
-                imageWrap.style.overflow = "hidden";
-                imageWrap.style.background = "#f8fafc";
-                imageWrap.style.display = "inline-block";
-                imageWrap.style.maxWidth = "100%";
+            if (board.imageSrc) {
+              const imageWrap = document.createElement("div");
+              imageWrap.style.position = "relative";
+              imageWrap.style.marginTop = "20px";
+              imageWrap.style.border = "1px solid #dbe3ea";
+              imageWrap.style.borderRadius = "18px";
+              imageWrap.style.overflow = "hidden";
+              imageWrap.style.background = "#f8fafc";
+              imageWrap.style.display = "inline-block";
+              imageWrap.style.maxWidth = "100%";
 
                 const img = document.createElement("img");
                 img.src = board.imageSrc;
@@ -1872,13 +1867,13 @@
                   imageWrap.appendChild(dot);
                 });
 
-                page.appendChild(imageWrap);
-              }
+              page.appendChild(imageWrap);
+            }
 
-              const notesWrap = document.createElement("div");
-              notesWrap.style.marginTop = "20px";
-              notesWrap.style.display = "grid";
-              notesWrap.style.gap = "12px";
+            const notesWrap = document.createElement("div");
+            notesWrap.style.marginTop = "20px";
+            notesWrap.style.display = "grid";
+            notesWrap.style.gap = "12px";
 
               if (board.markers.length === 0) {
                 const empty = document.createElement("div");
@@ -1922,9 +1917,9 @@
                   });
               }
 
-              page.appendChild(notesWrap);
-              container.appendChild(page);
-              await waitForNextFrame();
+            page.appendChild(notesWrap);
+            container.appendChild(page);
+            await waitForNextFrame();
 
               canvas = await window.html2canvas(page, {
                 scale: 2,
@@ -1937,22 +1932,17 @@
               const renderWidth = canvas.width * ratio;
               const renderHeight = canvas.height * ratio;
 
-              if (!isFirstPage) {
-                pdf.addPage();
-              }
-              pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
-              isFirstPage = false;
-            } finally {
-              if (canvas) {
-                canvas.width = 0;
-                canvas.height = 0;
-              }
-              page.remove();
-              await waitForNextFrame();
+            pdf.addImage(imgData, "PNG", margin, margin, renderWidth, renderHeight);
+          } finally {
+            if (canvas) {
+              canvas.width = 0;
+              canvas.height = 0;
             }
+            page.remove();
+            await waitForNextFrame();
           }
-
-          pdf.save("webboards-export.pdf");
+          const fileName = `${(board.name || "webboard").replace(/\s+/g, "-")}.pdf`;
+          pdf.save(fileName);
           setSaveState("PDF 저장됨");
         } catch (error) {
           console.error(error);
@@ -2032,7 +2022,7 @@
         if (!board?.selectedId) return;
         editMarker(board.selectedId);
       });
-      els.pdfExportBtn.addEventListener("click", exportAllBoardsToPdf);
+      els.pdfExportBtn.addEventListener("click", exportCurrentBoardToPdf);
       els.deleteBoardBtn.addEventListener("click", openDeleteBoardConfirm);
       els.cancelDeleteBoardBtn.addEventListener("click", closeDeleteBoardConfirm);
       els.confirmDeleteBoardBtn.addEventListener("click", deleteCurrentBoard);
