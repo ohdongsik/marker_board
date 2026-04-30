@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
-from urllib.parse import quote
 
 from api._shared import (
     STATE_ID,
@@ -19,11 +18,13 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
-            rows = supabase_request(
-                "GET",
-                f"/rest/v1/marker_board_states?id=eq.{quote(STATE_ID)}&select=payload",
+            payload = supabase_request(
+                "POST",
+                "/rest/v1/rpc/get_marker_board_state",
+                {
+                    "workspace_id_input": STATE_ID,
+                },
             )
-            payload = rows[0]["payload"] if rows else None
             json_response(self, {"ok": True, "state": payload})
         except Exception as error:  # noqa: BLE001
             json_response(
@@ -48,10 +49,10 @@ class handler(BaseHTTPRequestHandler):
 
             supabase_request(
                 "POST",
-                "/rest/v1/marker_board_states",
+                "/rest/v1/rpc/save_marker_board_state",
                 {
-                    "id": STATE_ID,
-                    "payload": payload,
+                    "workspace_id_input": STATE_ID,
+                    "state_input": payload,
                 },
             )
             json_response(self, {"ok": True})
