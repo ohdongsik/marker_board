@@ -1819,7 +1819,6 @@
 
           if (board.imageSrc) {
             const imageWrap = document.createElement("div");
-            imageWrap.style.position = "relative";
             imageWrap.style.marginTop = "20px";
             imageWrap.style.border = "1px solid #dbe3ea";
             imageWrap.style.borderRadius = "18px";
@@ -1828,30 +1827,31 @@
             imageWrap.style.display = "inline-block";
             imageWrap.style.maxWidth = "100%";
 
+            const imageStage = document.createElement("div");
+            imageStage.style.position = "relative";
+            imageStage.style.display = "inline-block";
+            imageStage.style.lineHeight = "0";
+            imageWrap.appendChild(imageStage);
+
             const img = document.createElement("img");
             img.src = board.imageSrc;
             img.style.display = "block";
             img.style.maxWidth = "1000px";
             img.style.width = "100%";
             img.style.height = "auto";
-            imageWrap.appendChild(img);
+            imageStage.appendChild(img);
 
             await new Promise((resolve) => {
               if (img.complete) resolve();
               else img.onload = resolve;
             });
 
-            const naturalWidth = board.imageWidth || img.naturalWidth || 1;
-            const naturalHeight = board.imageHeight || img.naturalHeight || 1;
-            const renderedWidth = img.clientWidth || 1000;
-            const renderedHeight = img.clientHeight || Math.round((naturalHeight / naturalWidth) * renderedWidth);
-
             board.markers.forEach((marker) => {
               const dot = document.createElement("div");
               dot.textContent = String(marker.number);
               dot.style.position = "absolute";
-              dot.style.left = `${marker.x * renderedWidth}px`;
-              dot.style.top = `${marker.y * renderedHeight}px`;
+              dot.style.left = `${marker.x * 100}%`;
+              dot.style.top = `${marker.y * 100}%`;
               dot.style.width = "28px";
               dot.style.height = "28px";
               dot.style.transform = "translate(-50%, -50%)";
@@ -1865,7 +1865,7 @@
               dot.style.display = "grid";
               dot.style.placeItems = "center";
               dot.style.boxShadow = "0 8px 18px rgba(47,109,246,0.28)";
-              imageWrap.appendChild(dot);
+              imageStage.appendChild(dot);
             });
 
             page.appendChild(imageWrap);
